@@ -25,7 +25,7 @@ class IndexScrapper(object):
         self.last_scrap = None
         self.data = []
 
-    def run(self, start_page=0, end_page=None, sleep_time=2):
+    def run(self, start_page=0, end_page=None, sleep_time=2, retry_time=60):
         """ Run the scrapping process
 
         :param start_page: Which page of the index we should start (Default: First page).
@@ -35,14 +35,20 @@ class IndexScrapper(object):
         """
         end_page = self.page_count-1 if end_page is None else end_page
         for page in range(start_page, end_page+1):
-            print("Retrieving page {current} ({start_page} to {end_page})".format(
-                current=page,
-                start_page=start_page,
-                end_page=end_page
-            ))
-            html = self._get_index_page(page)
-            self.data += IndexScrapper._parse_page(html, page)
-            sleep(sleep_time)
+            try:
+                print("Retrieving page {current} ({start_page} to {end_page})".format(
+                    current=page,
+                    start_page=start_page,
+                    end_page=end_page
+                ))
+                html = self._get_index_page(page)
+                self.data += IndexScrapper._parse_page(html, page)
+                sleep(sleep_time)
+            except Exception as e:  # TODO: Make this exception clause more specific
+                print(e)
+                print("Exception raised when processing page {page}".format(page))
+                print("Retrying in {retry_time} seconds".format(retry_time=retry_time))
+                sleep(retry_time)
 
     def to_csv(self, filepath):
         """ Save the results of the scrapping to a CSV file.
