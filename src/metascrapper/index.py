@@ -35,20 +35,22 @@ class IndexScrapper(object):
         """
         end_page = self.page_count-1 if end_page is None else end_page
         for page in range(start_page, end_page+1):
-            try:
-                print("Retrieving page {current} ({start_page} to {end_page})".format(
-                    current=page,
-                    start_page=start_page,
-                    end_page=end_page
-                ))
-                html = self._get_index_page(page)
-                self.data += IndexScrapper._parse_page(html, page)
-                sleep(sleep_time)
-            except Exception as e:  # TODO: Make this exception clause more specific
-                print(e)
-                print("Exception raised when processing page {page}".format(page))
-                print("Retrying in {retry_time} seconds".format(retry_time=retry_time))
-                sleep(retry_time)
+            while True:  # TODO: Add a maximum number of attempts
+                try:
+                    print("Retrieving page {current} ({start_page} to {end_page})".format(
+                        current=page,
+                        start_page=start_page,
+                        end_page=end_page
+                    ))
+                    html = self._get_index_page(page)
+                    self.data += IndexScrapper._parse_page(html, page)
+                    sleep(sleep_time)
+                    break
+                except Exception as e:  # TODO: Make this exception clause more specific
+                    print(e)
+                    print("Exception raised when processing page {page}".format(page=page))
+                    print("Retrying in {retry_time} seconds".format(retry_time=retry_time))
+                    sleep(retry_time)
 
     def to_csv(self, filepath):
         """ Save the results of the scrapping to a CSV file.
@@ -56,7 +58,7 @@ class IndexScrapper(object):
         :param filepath: Path to the file where we will save the data
         """
         with open(filepath, "w", encoding="utf-8") as f:
-            writer = csv.writer(f, lineterminator="\n")
+            writer = csv.writer(f, lineterminator="\n", quoting=csv.QUOTE_ALL)
             writer.writerow(("page_number", "title", "url", "metascore", "userscore", "publish_date"))
             writer.writerows(self.data)
 
