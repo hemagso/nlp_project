@@ -1,6 +1,7 @@
 from metascrapper.index import IndexScrapper
 import sensitive
 
+
 user_agent = "Metascrapper ({email})".format(email=sensitive.EMAIL)
 index_scrapper = IndexScrapper(user_agent=user_agent)
 
