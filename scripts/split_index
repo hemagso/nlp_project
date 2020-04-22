@@ -1,0 +1,18 @@
+import pandas as pd
+import numpy as np
+import csv
+
+N_SLICES = 50
+
+index_path = "../data/reviews/game_index.csv"
+df = pd.read_csv(index_path)
+df["slice_id"] = np.random.randint(0, N_SLICES, size=(df.shape[0], ))
+
+for slice_id, df_grouped in df.groupby("slice_id"):
+    df_grouped = df_grouped.drop("slice_id", axis=1)
+    df_grouped.to_csv(
+        "../data/reviews/game_index/game_index_part{0:02d}.csv".format(slice_id),
+        index=False,
+        quoting=csv.QUOTE_ALL
+    )
+
