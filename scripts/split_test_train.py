@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 
-
-def split_dataset(df, proportions):
+def split_dataset(df, proportions, seed):
+    np.random.seed(seed)
     assert sum(proportions) == 1
     start = 0
     end = 0
@@ -21,7 +21,7 @@ df_reviews = pd.read_csv("../data/reviews/reviews_process.csv", encoding="utf-8"
 df_en = df_reviews[df_reviews["language"] == "en"].drop("language", axis=1)
 
 proportions = (0.7, 0.15, 0.15)
-df_train, df_valid, df_test = split_dataset(df_en, proportions)
+df_train, df_valid, df_test = split_dataset(df_en, proportions, seed=3052104)
 
 df_train.to_csv("../data/reviews/train.csv", encoding="utf-8", index=False)
 df_valid.to_csv("../data/reviews/valid.csv", encoding="utf-8", index=False)
