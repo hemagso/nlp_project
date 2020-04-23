@@ -1,36 +1,39 @@
-import csv
+import h5py
+import json
+import bpe
 
 
-class Vocabulary(object):
-    SPECIAL_TOKENS = ["<PAD>", "<UNK>"]
-    PAD_IDX = 0
-    UNK_IDX = 1
+class Dataset(object):
+    def __init__(self, hdf5_dataset, dstype="train"):
+        self.dstype = dstype
+        self._load_data(hdf5_dataset)
+        self._load_metadata(hdf5_dataset)
+        assert len(self.tokens) == len(self.scores)
 
-    def __init__(self, vocab_path):
-        self._load_csv_file(vocab_path)
+    def _load_data(self, hdf5_dataset):
+        self.tokens = list(hdf5_dataset["data/{dstype}/tokens".format(dstype=self.dstype)])
+        self.scores = list(hdf5_dataset["data/{dstype}/scores".format(dstype=self.dstype)])
 
-    def _load_csv_file(self, path):
-        with open(path, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            next(reader)  # Skipping header
-            self.id2vocab = {idx + len(Vocabulary.SPECIAL_TOKENS): word for idx, (word, _) in enumerate(reader)}
-            self.vocab2id = {word: idx for idx, word in self.id2vocab.items()}
-        self._add_special_tokens()
+    def _load_metadata(self, hdf5_dataset):
+        vocab_dict = json.loads(hdf5_dataset["metadata/encoder"][()])
+        self.encoder = bpe.Encoder.from_dict(vocab_dict)
 
-    def _add_special_tokens(self):
-        for idx, token in enumerate(Vocabulary.SPECIAL_TOKENS):
-            self.id2vocab[idx] = token
-            self.vocab2id[token] = idx
+    def __getitem__(self, item):
+        return self.tokens[item], self.scores[item]
 
-    def to_vocab(self, id_list):
-        return [self.id2vocab[idx] for idx in id_list]
+    def __iter__(self):
+        return iter(zip(self.tokens, self.scores))
 
-    def to_idx(self, token_list):
-        return [self.vocab2id.get(token.lower(), Vocabulary.UNK_IDX) for token in token_list]
+    def __len__(self):
+        return len(self.tokens)
 
+    @staticmethod
+    def read_hdf5(path, datasets=["train", "valid", "test"]):
+        ret = ()
+        with h5py.File(path, "r") as f:
+            for dataset in datasets:
+                ret += (Dataset(f, dstype=dataset),)
+        return ret
 
-if __name__ == "__main__":
-    vocab = Vocabulary("../../data/reviews/vocabulary_test.csv")
-    print(vocab.to_idx(["I", "am", "crazy", "about", "this", "game", "!"]))
-
-
+ds_train, ds_valid, ds_test = Dataset.read_hdf5("../../data/reviews/tokenized.h5")
+print(len(ds_train), len(ds_valid), len(ds_test))
