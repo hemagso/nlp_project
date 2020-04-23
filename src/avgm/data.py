@@ -34,6 +34,3 @@ class Dataset(object):
             for dataset in datasets:
                 ret += (Dataset(f, dstype=dataset),)
         return ret
-
-ds_train, ds_valid, ds_test = Dataset.read_hdf5("../../data/reviews/tokenized.h5")
-print(len(ds_train), len(ds_valid), len(ds_test))
