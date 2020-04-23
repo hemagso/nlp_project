@@ -1,3 +1,5 @@
 /sensitive/*.py
 /data/*
 !/data/README.md
+
+notebooks/.ipynb_checkpoints
