@@ -5,16 +5,18 @@ from torch.utils import data
 import torch.nn as nn
 import torch
 
+
 class Dataset(data.Dataset):
-    def __init__(self, hdf5_dataset, dstype="train"):
+    def __init__(self, hdf5_dataset, dstype="train", maxsize=None):
+        # TODO: Add options to truncate reviews to a maximum size
         self.dstype = dstype
-        self._load_data(hdf5_dataset)
+        self._load_data(hdf5_dataset, maxsize)
         self._load_metadata(hdf5_dataset)
         assert len(self.tokens) == len(self.scores)
 
-    def _load_data(self, hdf5_dataset):
+    def _load_data(self, hdf5_dataset, maxsize):
         self.tokens = [
-            torch.LongTensor(item) for item in hdf5_dataset["data/{dstype}/tokens".format(dstype=self.dstype)]
+            torch.LongTensor(item[slice(0, maxsize)]) for item in hdf5_dataset["data/{dstype}/tokens".format(dstype=self.dstype)]
         ]
         self.scores = [
             torch.LongTensor([item]) for item in hdf5_dataset["data/{dstype}/scores".format(dstype=self.dstype)]
@@ -36,11 +38,11 @@ class Dataset(data.Dataset):
         return len(self.tokens)
 
     @staticmethod
-    def read_hdf5(path, datasets=("train", "valid", "test")):
+    def read_hdf5(path, datasets=("train", "valid", "test"), maxsize=None):
         ret = ()
         with h5py.File(path, "r") as f:
             for dataset in datasets:
-                ret += (Dataset(f, dstype=dataset),)
+                ret += (Dataset(f, dstype=dataset, maxsize=maxsize),)
         return ret
 
 
@@ -54,6 +56,6 @@ class PadSequence(object):
         lengths = torch.LongTensor([len(tokens) for tokens in sequences])
         scores = torch.LongTensor([scores for tokens, scores in sorted_batch])
         sequences_padded = nn.utils.rnn.pad_sequence(sequences, batch_first=True, padding_value=self.padding_value)
-        return sequences_padded, lengths, scores
+        return (sequences_padded, lengths), scores
 
 
