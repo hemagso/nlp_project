@@ -1,31 +1,51 @@
 import torch
+from collections import defaultdict
+import numpy as np
 
 
-class MultiClassAccuracy(object):
-    def __init__(self):
-        self.correct = 0
-        self.total = 0
+class MultiClassMetrics(object):
+    def __init__(self, size):
+        self.size = size
+        self.current_epoch = None
+        self.current_mode = None
+        self.data = defaultdict(  # Epoch dictionary
+            lambda: defaultdict(  # Mode dictionary
+                lambda: np.zeros((self.size, self.size))
+            )
+        )
         self.name = "acc"
 
-    def update(self, y_hat, y):
-        y_class = y_hat.argmax(axis=1)
-        self.correct += (y_class == y).sum().item()
-        self.total += y.shape[0]
+    def set_epoch(self, epoch):
+        self.current_epoch = epoch
 
-    def __call__(self):
-        return self.correct / self.total
-
-
-class MAE(object):
-    def __init__(self):
-        self.sum_error = 0
-        self.total = 0
-        self.name = "MAE"
+    def set_mode(self, mode):
+        self.current_mode = mode
 
     def update(self, y_hat, y):
         y_class = y_hat.argmax(axis=1)
-        self.sum_error += torch.abs(y_class - y).sum().item()
-        self.total += y.shape[0]
+        for pred, actual in zip(y_class, y):
+            pred, actual = pred.item(), actual.item()
+            self.data[self.current_epoch][self.current_mode][pred, actual] += 1
 
-    def __call__(self):
-        return self.sum_error / self.total
+    def calculate(self, epoch=None, mode=None):
+        epoch = epoch if epoch is not None else self.current_epoch
+        mode = mode if mode is not None else self.current_mode
+
+        cm = self.data[epoch][mode]
+        total = cm.sum()
+        if total == 0:
+            return 0, 0, 0
+
+        true_pos = np.diag(cm)
+        false_pos = cm.sum(axis=0) - true_pos
+        false_neg = cm.sum(axis=1) - true_pos
+
+        precision = true_pos / (true_pos + false_pos)
+        recall = true_pos / (true_pos + false_neg)
+        accuracy = true_pos.sum() / total
+
+        return accuracy, precision, recall
+
+    def __repr__(self):
+        acc, _, _ = self.calculate()
+        return "{:0.2f}".format(acc)
