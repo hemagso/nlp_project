@@ -1,6 +1,7 @@
 import torch
 from collections import defaultdict
 import numpy as np
+import csv
 
 
 class MultiClassMetrics(object):
@@ -42,6 +43,16 @@ class MultiClassMetrics(object):
             accuracy = true_pos.sum() / cm.sum()
 
         return accuracy, precision, recall
+
+    def to_csv(self, filepath):
+        with open(filepath, "w", encoding="utf-8") as f:
+            writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, lineterminator="\n")
+            writer.writerow(("epoch", "mode", "pred", "actual", "count"))
+            for epoch in self.data.keys():
+                for mode in self.data[epoch].keys():
+                    for i in range(self.size):
+                        for j in range(self.size):
+                            writer.writerow((epoch, mode, i, j, self.data[epoch][mode][i, j]))
 
     def __repr__(self):
         acc, _, _ = self.calculate()
