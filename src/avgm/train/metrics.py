@@ -32,17 +32,14 @@ class MultiClassMetrics(object):
         mode = mode if mode is not None else self.current_mode
 
         cm = self.data[epoch][mode]
-        total = cm.sum()
-        if total == 0:
-            return 0, 0, 0
 
         true_pos = np.diag(cm)
         false_pos = cm.sum(axis=0) - true_pos
         false_neg = cm.sum(axis=1) - true_pos
-
-        precision = true_pos / (true_pos + false_pos)
-        recall = true_pos / (true_pos + false_neg)
-        accuracy = true_pos.sum() / total
+        with np.errstate(divide="ignore", invalid="ignore"):
+            precision = true_pos / (true_pos + false_pos)
+            recall = true_pos / (true_pos + false_neg)
+            accuracy = true_pos.sum() / cm.sum()
 
         return accuracy, precision, recall
 
