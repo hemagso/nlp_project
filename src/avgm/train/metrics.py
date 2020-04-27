@@ -1,4 +1,3 @@
-import torch
 from collections import defaultdict
 import numpy as np
 import csv
