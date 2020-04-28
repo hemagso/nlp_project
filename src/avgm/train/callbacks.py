@@ -1,10 +1,8 @@
 import torch.nn as nn
+from abc import ABC, abstractmethod
 
 
-class Callback(object):
-    def __init__(self):
-        pass
-
+class Callback(ABC):
     def on_batch_end(self):
         pass
 

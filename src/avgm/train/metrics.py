@@ -1,25 +1,35 @@
 from collections import defaultdict
 import numpy as np
+from abc import ABC, abstractmethod
 import csv
 
 
-class MultiClassMetrics(object):
-    def __init__(self, size):
-        self.size = size
+class Metric(ABC):
+    def __init__(self):
         self.current_epoch = None
         self.current_mode = None
-        self.data = defaultdict(  # Epoch dictionary
-            lambda: defaultdict(  # Mode dictionary
-                lambda: np.zeros((self.size, self.size))
-            )
-        )
-        self.name = "acc"
 
     def set_epoch(self, epoch):
         self.current_epoch = epoch
 
     def set_mode(self, mode):
         self.current_mode = mode
+
+    @abstractmethod
+    def update(self, y_hat, y):
+        pass
+
+
+class MultiClassMetrics(Metric):
+    def __init__(self, size):
+        super().__init__()
+        self.size = size
+        self.data = defaultdict(  # Epoch dictionary
+            lambda: defaultdict(  # Mode dictionary
+                lambda: np.zeros((self.size, self.size))
+            )
+        )
+        self.name = "acc"
 
     def update(self, y_hat, y):
         y_class = y_hat.argmax(axis=1)
