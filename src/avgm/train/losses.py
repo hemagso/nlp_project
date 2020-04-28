@@ -4,9 +4,9 @@ import torch
 
 
 class CumulativeLinkLoss(nn.Module):
-    def __init__(self, reduction: str = 'elementwise_mean', class_weights: Optional[torch.Tensor] = None) -> None:
+    def __init__(self, reduction: str = 'elementwise_mean', weight: Optional[torch.Tensor] = None) -> None:
         super().__init__()
-        self.class_weights = class_weights
+        self.weight = weight
         self.reduction = reduction
 
     def _reduction(self, loss: torch.Tensor) -> torch.Tensor:
@@ -21,15 +21,16 @@ class CumulativeLinkLoss(nn.Module):
 
     def forward(self, y_hat: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         eps = 1E-15
-        likelihoods = torch.clamp(torch.gather(y_hat, 1, y.unsqueeze(1)), eps, 1 - eps)
+        y = y.unsqueeze(1)
+        likelihoods = torch.clamp(torch.gather(y_hat, 1, y), eps, 1 - eps)
         neg_log_likelihood = -torch.log(likelihoods)
 
-        if self.class_weights is not None:
-            class_weights = torch.as_tensor(
-                self.class_weights,
+        if self.weight is not None:
+            weight = torch.as_tensor(
+                self.weight,
                 dtype=neg_log_likelihood.dtype,
                 device=neg_log_likelihood.device
             )
-            neg_log_likelihood *= class_weights[y]
+            neg_log_likelihood *= weight[y]
 
         return self._reduction(neg_log_likelihood)
